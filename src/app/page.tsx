@@ -86,7 +86,7 @@ export default function Home() {
               Uploading...
             </div>
           ) : (
-            'Upload Image'
+            'Get Image Details'
           )}
         </button>
 
