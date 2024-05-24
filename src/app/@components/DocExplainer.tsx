@@ -19,7 +19,7 @@ const DocExplainer = () => {
             const reader = new FileReader();
             reader.onloadend = () => {
                 const base64 = reader.result as string;
-                setBase64String(base64);
+                setBase64String(base64.replace("data:image/jpeg;base64,",""));
             };
             reader.readAsDataURL(file);
         }
@@ -87,13 +87,6 @@ const DocExplainer = () => {
             )}
 
             <input value={Question} onChange={(e) => setQuestion(e.target.value)} type='text' placeholder='Ask any query you have regarding document' className='p-2 w-full border-[2px] rounded-md border-black outline-none mt-2 mb-2' />
-
-            {base64String && (
-                <div>
-                    <h2>Base64 Encoded String:</h2>
-                    <textarea value={base64String} readOnly rows={10} cols={50}></textarea>
-                </div>
-            )}
 
             <button
                 onClick={handleFileUpload}
