@@ -8,12 +8,20 @@ const DocExplainer = () => {
     const [Result, setResult] = useState("");
     const [previewUrl, setPreviewUrl] = useState(null);
     const [uploading, setUploading] = useState(false);
+    const [base64String, setBase64String] = useState<string | null>(null);
+    const [Question, setQuestion] = useState("");
 
     const handleFileChange = (event: any) => {
-        const file = event.target.files[0];
+        const file = event.target.files?.[0];
         if (file) {
             setSelectedFile(file)
             setPreviewUrl(file)
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64 = reader.result as string;
+                setBase64String(base64);
+            };
+            reader.readAsDataURL(file);
         }
     };
 
@@ -24,7 +32,7 @@ const DocExplainer = () => {
         }
         else {
             setUploading(true);
-            GetResFromModel(SelectedFile)
+            GetResFromModel(base64String)
         }
     }
 
@@ -35,34 +43,31 @@ const DocExplainer = () => {
                 return;
             }
 
-            const fileReader = new FileReader();
+            const payload = {
+                inputs: {
+                    image: base64String,
+                    question: Question,
+                },
+            };
 
-            fileReader.onloadend = async () => {
-                const base64Image = fileReader.result.split(',')[1];
-                const payload = {
-                    image: base64Image,
-                };
-
-                const response = await fetch(
-                    `${process.env.DOCQAMODEL_API_URL}`,
-                    {
-                        headers: {
-                            Authorization: `${process.env.HF_TOKEN}`,
-                            'Content-Type': 'application/json',
-                        },
-                        method: "POST",
-                        body: JSON.stringify(payload),
-                    }
-                );
-
-                if (!response.ok) {
-                    alert(`HTTP error! status: ${response.status}`);
-                    setUploading(false);
+            const response = await fetch(
+                `${process.env.DOCQAMODEL_API_URL}`,
+                {
+                    headers: {
+                        Authorization: `${process.env.HF_TOKEN}`,
+                        'Content-Type': 'application/json',
+                    },
+                    method: "POST",
+                    body: JSON.stringify(payload),
                 }
-                setUploading(false)
-                const result = await response.json();
-                setResult(result);
+            );
+            if (!response.ok) {
+                alert(`HTTP error! status: ${response.status}`);
+                setUploading(false);
             }
+            setUploading(false)
+            const result = await response.json();
+            setResult(result);
         } catch (error: any) {
             alert(error.message)
             setUploading(false)
@@ -81,7 +86,14 @@ const DocExplainer = () => {
                 <Image src={URL.createObjectURL(previewUrl)} alt="Preview" className="mt-[10px] mb-[20px] rounded-md shadow-md" width={200} height={200} />
             )}
 
-            <input type='text' placeholder='Ask any query you have regarding document' className='p-2 w-full border-[2px] rounded-md border-black outline-none mt-2 mb-2' />
+            <input value={Question} onChange={(e) => setQuestion(e.target.value)} type='text' placeholder='Ask any query you have regarding document' className='p-2 w-full border-[2px] rounded-md border-black outline-none mt-2 mb-2' />
+
+            {base64String && (
+                <div>
+                    <h2>Base64 Encoded String:</h2>
+                    <textarea value={base64String} readOnly rows={10} cols={50}></textarea>
+                </div>
+            )}
 
             <button
                 onClick={handleFileUpload}
